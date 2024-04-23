@@ -4,7 +4,7 @@ function folderCleanUp {
         $filePath
     )
     # Gets the list of all unique extensions in the file path
-    $extensions = Get-ChildItem -Path $filePath | Select-Object -ExpandProperty Extension | Select-Object -Unique
+    $extensions = Get-ChildItem -Path $filePath | Select-Object -ExpandProperty Extension -Unique
     
     # For each unique extension found above runs through the following
     foreach ($ext in $extensions) {
