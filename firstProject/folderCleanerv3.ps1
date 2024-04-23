@@ -4,7 +4,7 @@ function folderCleanUp {
         $filePath
     )
     # Gets the list of all unique extensions in the file path
-    $extensions = Get-ChildItem $filePath | Select-Object -ExpandProperty Extension | Select-Object -Unique
+    $extensions = Get-ChildItem -Path $filePath | Select-Object -ExpandProperty Extension | Select-Object -Unique
     
     # For each unique extension found above runs through the following
     foreach ($ext in $extensions) {
@@ -12,28 +12,40 @@ function folderCleanUp {
         $trimmedExtention = $ext.TrimStart(".")
 
         # Checks if the path exists - if it doesn't then it creates the path using the trimmed version above and then moves the files that have that extension
-        if (!(Test-Path $filePath\$trimmedExtention)) {
+        if (!(Test-Path -Path $filePath\$trimmedExtention)) {
             New-Item -Path "$filePath\$trimmedExtention" -ItemType Directory
             Write-Output "Path $trimmedExtention created, moving files into folder"
-            $files = Get-ChildItem $filePath -Filter "*$ext"
+            $files = Get-ChildItem -Path $filePath -Filter "*$ext"
             foreach ($file in $files) {
-                Move-Item $file "$filePath\$trimmedExtention"
+                Move-Item -Path $file -Destination "$filePath\$trimmedExtention"
             }
         }
         else {
             # If the path already existed then it just moves the files
             Write-Output "Path Already Exists, moving files into folder"
-            $files = Get-ChildItem $filePath -Filter "*$ext"
+            $files = Get-ChildItem -Path $filePath -Filter "*$ext"
             foreach ($file in $files) {
-                Move-Item $file "$filePath\$trimmedExtention"
+                Move-Item -Path $file -Destination "$filePath\$trimmedExtention"
             }
         }
     }
     # Final output explaining that it has been completed and waits for the user to hit enter to exit the script
     Write-Output "Done"
+
+    # Gets the list of all files that were not moved and outputs them to the user
+    $filesRemaining = Get-ChildItem -Path $filePath
+    foreach ($file in $filesRemaining) {
+        if (!($file.PSIsContainer)) {
+            Write-Output "$file could not be moved, please move it manually"
+        }
+    }
+    
+    Write-Output "Press Enter to exit"
+
     Read-Host
     exit
 }
+
 # Takes the user input and tests it to see if it is valid, if it is then it runs the function above
 do {
     $filePath = Read-Host "Enter File Path, or q to quit"
@@ -42,7 +54,7 @@ do {
         exit
     }
     # If the path does not exist then it will ask the user to enter a valid path
-    if (!(Test-Path $filePath)) { 
+    if (!(Test-Path -Path $filePath)) { 
         Write-Output "$filePath does not exist, please try again"
         continue
     }
