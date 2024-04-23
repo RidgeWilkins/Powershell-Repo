@@ -36,10 +36,10 @@ function folderCleanUp {
     $filesRemaining = Get-ChildItem -Path $filePath
     foreach ($file in $filesRemaining) {
         if (!($file.PSIsContainer)) {
-            Write-Output "$file could not be moved, please move it manually"
+            Write-Output "$file could not be moved, please move it manually. This may be due to text in the file name"
         }
     }
-    
+
     Write-Output "Press Enter to exit"
 
     Read-Host
