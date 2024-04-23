@@ -21,7 +21,7 @@ function folderCleanUp {
             }
         }
         else {
-        # If the path already existed then it just moves the files
+            # If the path already existed then it just moves the files
             Write-Output "Path Already Exists, moving files into folder"
             $files = Get-ChildItem $filePath -Filter "*$ext"
             foreach ($file in $files) {
@@ -34,16 +34,18 @@ function folderCleanUp {
     Read-Host
     exit
 }
-# Takes the user input allowing them to quit if wanting
-$filePath = Read-Host "Enter File Path, or q to quit"
-
-# Reads the user input - if they quit exits the script.
-while ($filePath -ne 'q') {
-    # Tests if the file path exists, if it doesn't prompts the user again to provide proper path or quit.
-    while (!(Test-Path $filePath)) {
-        Write-Output "$filePath does not exist, please enter a filepath that exists"
-        $filePath = Read-Host "Enter File Path, or q to quit"
+# Takes the user input and tests it to see if it is valid, if it is then it runs the function above
+do {
+    $filePath = Read-Host "Enter File Path, or q to quit"
+    # If user input is q then exits the script
+    if ($filePath -eq 'q') {
+        exit
     }
-    # Runs the function created at the start
+    # If the path does not exist then it will ask the user to enter a valid path
+    if (!(Test-Path $filePath)) { 
+        Write-Output "$filePath does not exist, please try again"
+        continue
+    }
+    # Runs the function with the filepath entered by the user
     folderCleanUp $filePath
-} exit
+} while ($true)
