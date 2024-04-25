@@ -45,41 +45,96 @@ else {
     Write-Host "C: drive free space check OK" -ForegroundColor $fineColor
 }
 
-#Checking for Windows Updates
-Write-Host "Checking for Windows Updates" -ForegroundColor $outputColor
+# Network Health
+Write-Host "Checking Network Health" -ForegroundColor $outputColor
 
-# Get Windows Update session
-$session = New-Object -ComObject Microsoft.Update.Session
+$internetConnection = Test-Connection -ComputerName www.google.com -Count 4 -Quiet
 
-# Initialize update searcher
-$searcher = $session.CreateUpdateSearcher()
+if ($internetConnection) {
+    Write-Host "Internet connection is OK" -ForegroundColor $fineColor
 
-# Search for updates
-$searchResult = $searcher.Search("IsInstalled=0 and Type='Software'")
-
-# Get list of available updates
-$availableUpdates = $searchResult.Updates
-
-# Print number of available updates
-Write-Host $availableUpdates.Count "updates available" -ForegroundColor $errorColor
-
-# Print update titles
-$availableUpdates | ForEach-Object {
-    Write-Host $_.Title
-}
-
-if ($availableUpdates.Count -ge 1) {
-    $userConfirmation = Read-Host "Would you like to install these updates? (Y/N)"
+    # Asks if they would like the check for windows updates
+    $userConfirmation = Read-Host "Would you like to check for Windows Updates? (Y/N)"
     if ($userConfirmation -eq "y") {
-        Write-Host "Installing updates" -ForegroundColor $fineColor
-        $downloader = $session.CreateUpdateDownloader()
-        $downloader.Updates = $availableUpdates
-        $downloader.Download()
-        $installer = $session.CreateUpdateInstaller()
-        $installer.Updates = $availableUpdates
-        Write-Host "Updates installed, please restart your computer when able" -ForegroundColor $fineColor
+        #Checking for Windows Updates
+        Write-Host "Checking for Windows Updates" -ForegroundColor $outputColor
+
+        # Get Windows Update session
+        $session = New-Object -ComObject Microsoft.Update.Session
+
+        # Initialize update searcher
+        $searcher = $session.CreateUpdateSearcher()
+
+        # Search for updates
+        $searchResult = $searcher.Search("IsInstalled=0 and Type='Software'")
+
+        # Get list of available updates
+        $availableUpdates = $searchResult.Updates
+
+        # Print number of available updates
+        Write-Host $availableUpdates.Count "updates available" -ForegroundColor $errorColor
+
+        # Print update titles
+        $availableUpdates | ForEach-Object {
+            Write-Host $_.Title
+        }
+
+        if ($availableUpdates.Count -ge 1) {
+            $userConfirmation = Read-Host "Would you like to install these updates? (Y/N)"
+            if ($userConfirmation -eq "y") {
+                Write-Host "Installing updates" -ForegroundColor $fineColor
+                $downloader = $session.CreateUpdateDownloader()
+                $downloader.Updates = $availableUpdates
+                $downloader.Download()
+                $installer = $session.CreateUpdateInstaller()
+                $installer.Updates = $availableUpdates
+                Write-Host "Updates installed, please restart your computer when able" -ForegroundColor $fineColor
+            }
+        }
+    }
+
+}
+else {
+    Write-Host "ERROR: No internet connection" -ForegroundColor $errorColor
+    Write-Host "Would you like to attempt to repair the network? (Y/N)"
+    $userConfirmation = Read-Host "Would you like to attempt to repair the network? (Y/N)"
+    if ($userConfirmation -eq "y") {
+        Write-Host "Attempting to repair network" -ForegroundColor $fineColor
+        # Restart Network
+
+        $networkAdapters = Get-NetAdapter 
+
+        foreach ($adapter in $networkAdapters) {
+
+            $adapterName = $adapter.Name
+  
+            Write-Output "Restarting network adapter: $adapterName"
+
+            Disable-NetAdapter -Name $adapterName -Confirm:$false
+            Enable-NetAdapter -Name $adapterName -Confirm:$false
+
+        }
+
+        Write-Host "Network reset complete." -ForegroundColor $outputColor
+        Write-Host "Checking Network Health Again" -ForegroundColor $outputColor
+
+        # Test if connected to internet
+        $internetConnection = Test-Connection -ComputerName www.google.com -Count 1 -Quiet 
+
+        if ($internetConnection) {
+            Write-Output "Internet connection detected! rerun this script if you would like to check for Windows Updates" -ForegroundColor $fineColor
+        }
+        else {
+            Write-Output "No internet connection detected, you will need to try to fix this yourself."  -ForegroundColor $errorColor
+        }
+
+
     }
 }
+
+
+
+
 
 # Checking for services not running
 Write-Host "Checking for services not running" -ForegroundColor $outputColor
