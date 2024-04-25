@@ -1,16 +1,18 @@
+# Script introduction and overview
 Write-Output "Welcome to the PC Health Checker"
 Write-Output "This script will check the health status of sections of your computer and alert anything that needs to be fixed"
 
-$outputColor = "Blue"
+# Set output colors
+$outputColor = "Blue" 
 $errorColor = "Red"
-$warningColor = "Yellow"
+$warningColor = "Yellow" 
 $fineColor = "Green"
 
-
-#Checking PC Uptime
+# Check PC uptime
+Write-Host "Checking PC Uptime" -ForegroundColor $outputColor
 $pcUptime = Get-Uptime
 
-# Check uptime and give status message
+# Check uptime and output status message
 switch ($pcUptime.Days) {
     { $_ -le 4 } { Write-Host "Your computer uptime is fine" -ForegroundColor $fineColor; break }
     { $_ -le 6 } { Write-Host "Your current uptime is $($pcUptime.Days) you should restart soon" -ForegroundColor $warningColor; break } 
@@ -18,14 +20,13 @@ switch ($pcUptime.Days) {
     Default {}
 }
 
-
-#Checking Disk Health
+# Check disk health
 Write-Host "Checking Disk Health" -ForegroundColor $outputColor
 
 # Run chkdsk on C: drive
-$chkdsk = chkdsk C:
+$chkdsk = chkdsk C: 
 
-# Check if there were errors
+# Check chkdsk output for errors
 if ($chkdsk -match "errors found") {
     Write-Host "ERROR: Chkdsk found errors on C: drive" -ForegroundColor $errorColor
 }
@@ -33,11 +34,11 @@ else {
     Write-Host "Chkdsk found C: drive to be healthy"  -ForegroundColor $fineColor
 }
 
-# Check free space
+# Check disk free space 
 $freeSpaceGB = [Math]::Round($cDrive.FreeSpace / 1GB)
 $totalSpaceGB = [Math]::Round($cDrive.Size / 1GB)
 
-# Check if free space is less than 10% of total
+# Check if free space is less than 10% total
 if ($freeSpaceGB -lt ($totalSpaceGB * 0.1)) {
     Write-Host "WARNING: C: drive free space is less than 10% of total capacity"  -ForegroundColor $errorColor
 }
@@ -45,18 +46,20 @@ else {
     Write-Host "C: drive free space check OK" -ForegroundColor $fineColor
 }
 
-# Network Health
+# Check network health
 Write-Host "Checking Network Health" -ForegroundColor $outputColor
 
+# Test internet connection
 $internetConnection = Test-Connection -ComputerName www.google.com -Count 4 -Quiet
 
 if ($internetConnection) {
     Write-Host "Internet connection is OK" -ForegroundColor $fineColor
 
-    # Asks if they would like the check for windows updates
+    # Prompt to check for Windows updates
     $userConfirmation = Read-Host "Would you like to check for Windows Updates? (Y/N)"
     if ($userConfirmation -eq "y") {
-        #Checking for Windows Updates
+        
+        # Check for Windows updates
         Write-Host "Checking for Windows Updates" -ForegroundColor $outputColor
 
         # Get Windows Update session
@@ -65,20 +68,21 @@ if ($internetConnection) {
         # Initialize update searcher
         $searcher = $session.CreateUpdateSearcher()
 
-        # Search for updates
+        # Search for available updates
         $searchResult = $searcher.Search("IsInstalled=0 and Type='Software'")
 
-        # Get list of available updates
+        # Get available updates
         $availableUpdates = $searchResult.Updates
 
-        # Print number of available updates
+        # Output number of available updates
         Write-Host $availableUpdates.Count "updates available" -ForegroundColor $errorColor
 
-        # Print update titles
+        # Output update titles
         $availableUpdates | ForEach-Object {
             Write-Host $_.Title
         }
 
+        # Prompt to install updates
         if ($availableUpdates.Count -ge 1) {
             $userConfirmation = Read-Host "Would you like to install these updates? (Y/N)"
             if ($userConfirmation -eq "y") {
@@ -99,15 +103,17 @@ else {
     Write-Host "Would you like to attempt to repair the network? (Y/N)"
     $userConfirmation = Read-Host "Would you like to attempt to repair the network? (Y/N)"
     if ($userConfirmation -eq "y") {
+        
+        # Attempt network repair
         Write-Host "Attempting to repair network" -ForegroundColor $fineColor
-        # Restart Network
 
-        $networkAdapters = Get-NetAdapter 
+        # Restart network adapters
+        $networkAdapters = Get-NetAdapter
 
         foreach ($adapter in $networkAdapters) {
 
             $adapterName = $adapter.Name
-  
+        
             Write-Output "Restarting network adapter: $adapterName"
 
             Disable-NetAdapter -Name $adapterName -Confirm:$false
@@ -118,8 +124,8 @@ else {
         Write-Host "Network reset complete." -ForegroundColor $outputColor
         Write-Host "Checking Network Health Again" -ForegroundColor $outputColor
 
-        # Test if connected to internet
-        $internetConnection = Test-Connection -ComputerName www.google.com -Count 1 -Quiet 
+        # Test internet connection again
+        $internetConnection = Test-Connection -ComputerName www.google.com -Count 1 -Quiet
 
         if ($internetConnection) {
             Write-Output "Internet connection detected! rerun this script if you would like to check for Windows Updates" -ForegroundColor $fineColor
@@ -132,22 +138,21 @@ else {
     }
 }
 
-
-
-
-
-# Checking for services not running
+# Check for stopped services
 Write-Host "Checking for services not running" -ForegroundColor $outputColor
 
-# List of services to check, more can be added if needed
-$services = @("wuauserv", "bits", "winrm", "spooler", "wscsvc")
+# List of services to check
+$services = @("wuauserv", "bits", "winrm", "spooler", "wscsvc") 
 
+# Check each service
 foreach ($service in $services) {
 
     $status = Get-Service -Name $service
 
     if ($status.Status -ne "Running") {
         Write-Host "Service $($status.Name) is not running. Current status: $($status.Status)" -ForegroundColor $errorColor
+        
+        # Prompt to start service
         $userConfirmation = Read-Host "Would you like to start the service? (Y/N)"
         if ($userConfirmation -eq "y") {
             Start-Service -Name $service
@@ -160,16 +165,19 @@ foreach ($service in $services) {
 
 }
 
-# Checking for processes not running
-Write-Output "Checking for processes not running"
+# Check for stopped processes
+Write-Output "Checking for processes not running" 
 
 # List of processes to check
-$processes = @("explorer", "svchost", "Code") 
+$processes = @("explorer", "svchost", "Code")
 
+# Check each process
 foreach ($process in $processes) {
 
     if (!(Get-Process -Name $process -ErrorAction SilentlyContinue)) {
         Write-Host "Process $process is NOT running" -ForegroundColor $errorColor
+        
+        # Prompt to start process
         $userConfirmation = Read-Host "Would you like to start the process? (Y/N)"
         if ($userConfirmation -eq "y") {
             Start-Process -FilePath $process
@@ -182,24 +190,23 @@ foreach ($process in $processes) {
 
 }
 
-#Running SFC scannow to find windows corruption
-
+# Run SFC scan
 Write-Host 'Running SFC scan' -ForegroundColor $outputColor
 
-# Run SFC scan
+# Execute SFC scan
 $sfc = sfc /scannow
 
-# Check output for errors
+# Check for errors
 if ($sfc -match 'Found violations') {
-    # Log error 
+    # Log errors
     $sfc | Out-File C:\logs\sfc-scan.txt
     Write-Host 'SFC scan found violations, please check C:\logs\sfc-scan.txt for more details' -ForegroundColor $errorColor
 }
 else {
-    # Log clean scan 
+    # Log clean scan
     Write-Host 'SFC scan completed without errors' -ForegroundColor $fineColor
 }
 
-
+#End of script
 Write-Host -ForegroundColor $outputColor "Script completed"
 Read-Host -Prompt "Press Enter to exit"
